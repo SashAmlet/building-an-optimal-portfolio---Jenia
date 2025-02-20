@@ -114,5 +114,5 @@ class PortfolioOptimizer:
 
         return result
     
-    def optimize_portfolio_by_Var():
+    def optimize_portfolio_by_VaR():
         pass

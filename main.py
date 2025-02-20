@@ -1,5 +1,7 @@
 from getdata import DataLoader
 from makeportfolio import PortfolioOptimizer
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 
 
@@ -25,4 +27,13 @@ historical_returns = DataLoader.get_historical_returns(tickers, start_date, end_
 MakePortfolio = PortfolioOptimizer(historical_returns, target_return, alpha)
 
 result = MakePortfolio.optimize_portfolio_by_Markowitz()
-print(result)
+
+var1_zero, var1_mean, var2_zero, var2_mean = MakePortfolio.calculate_VaR(result)
+
+
+
+# Output results
+print("VaR-zero історичний:", var1_zero)
+print("VaR-mean історичний:", var1_mean)
+print("VaR-zero параметричний:", var2_zero)
+print("VaR-mean параметричний:", var2_mean)

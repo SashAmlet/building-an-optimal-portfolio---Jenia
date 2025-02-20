@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
 import sys
+from scipy.stats import shapiro, norm
 
 class PortfolioOptimizer:
     def __init__(self, historical_returns, target_return, alpha):
@@ -16,6 +17,31 @@ class PortfolioOptimizer:
 
         self.log_historical_returns, self.log_target_return, self.log_mean_returns = self.logarithmization()
 
+
+    def normal_distribution(self):# перевірка нормального розподілу
+        _, p_with_lock = shapiro(self.historical_returns)
+        print("Normality with locking:", "Passed" if p_with_lock > 0.05 else "Failed")
+        return p_with_lock > 0.05
+
+    def calculate_VaR(self, result):
+        z_score = norm.ppf(1 - self.alpha)
+
+        # if self.normal_distribution():
+
+        # параметричний (нормальний розподіл)
+        historical_returns_array = -self.historical_returns.values
+        RP = (historical_returns_array * result.x).sum(axis=1)
+
+        var1_zero = z_score * RP.std() * np.sqrt(RP.shape[0]+1) - RP.mean() * np.sqrt(RP.shape[0]+1)
+        var1_mean = z_score * RP.std() * np.sqrt(RP.shape[0]+1)
+        #else:
+
+        # історичний (не залежить від розподілу)
+
+        var2_zero = 1 - np.quantile((1 + RP).cumprod(), self.alpha)
+        var2_mean = np.mean((1 + RP).cumprod()) - np.quantile((1 + RP).cumprod(), self.alpha)
+
+        return var1_zero, var1_mean, var2_zero, var2_mean
 
     
     def logarithmization(self):

@@ -37,3 +37,8 @@ print("VaR-zero історичний:", var1_zero)
 print("VaR-mean історичний:", var1_mean)
 print("VaR-zero параметричний:", var2_zero)
 print("VaR-mean параметричний:", var2_mean)
+
+print("Оптимальні ваги активів:", result.x)
+print("Волатильність:", result.fun)
+
+MakePortfolio.plot_efficient_frontier()

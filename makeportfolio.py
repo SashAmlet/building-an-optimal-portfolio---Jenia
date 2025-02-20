@@ -2,6 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 import sys
 from scipy.stats import shapiro, norm
+import matplotlib.pyplot as plt
 
 class PortfolioOptimizer:
     def __init__(self, historical_returns, target_return, alpha):
@@ -15,7 +16,29 @@ class PortfolioOptimizer:
             print("ERROR")
             sys.exit()
 
-        self.log_historical_returns, self.log_target_return, self.log_mean_returns = self.logarithmization()
+
+    def plot_efficient_frontier(self, num_portfolios=100):
+
+        _, _, log_mean_returns = self.logarithmization()
+        target_returns = np.linspace(log_mean_returns.min(), log_mean_returns.max(), num_portfolios)
+        efficient_portfolios = []
+
+        for target_return in target_returns:
+            result = self.optimize_portfolio_by_Markowitz(_target_return=target_return)
+            if result.success:
+                efficient_portfolios.append((result.fun, target_return))
+
+        risks, returns = zip(*efficient_portfolios)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(risks, returns, 'o-', markersize=5, label='Efficient Frontier')
+        plt.title('Efficient Frontier')
+        plt.xlabel('Risk (Volatility)')
+        plt.ylabel('Return')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
 
 
     def normal_distribution(self):# перевірка нормального розподілу
@@ -44,23 +67,29 @@ class PortfolioOptimizer:
         return var1_zero, var1_mean, var2_zero, var2_mean
 
     
-    def logarithmization(self):
+    def logarithmization(self, _mean_returns=None, _cov_matrix=None, _target_return=None):
         log_returns = np.log(self.historical_returns + 1)
         log_target_return = np.log(self.target_return + 1)
         log_mean_returns = np.log(self.mean_returns + 1)
 
+        if _mean_returns is not None:
+            log_mean_returns = np.log(_mean_returns + 1)            
+        if _target_return is not None:
+            log_target_return = np.log(_target_return + 1)
+        if _cov_matrix is not None:
+            log_returns = np.log(_cov_matrix + 1)
+
         return log_returns, log_target_return, log_mean_returns
 
-    def optimize_portfolio_by_Markowitz(self, log=True):
+    def optimize_portfolio_by_Markowitz(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True):
         # Логарифмізація
         if log:
-            mean_returns = self.log_mean_returns
-            cov_matrix = np.cov(self.log_historical_returns, rowvar=False)
-            target_return = self.log_target_return
+            log_historical_returns, target_return, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
+            cov_matrix = np.cov(log_historical_returns, rowvar=False)
         else:
-            mean_returns = self.mean_returns
-            cov_matrix = np.cov(self.historical_returns, rowvar=False)
-            target_return = self.target_return
+            mean_returns = _mean_returns or self.mean_returns
+            cov_matrix = _cov_matrix or np.cov(self.historical_returns, rowvar=False)
+            target_return = _target_return or self.target_return
 
 
         # Цільова функція (мінімізація ризику)
@@ -84,3 +113,6 @@ class PortfolioOptimizer:
                         method='SLSQP', bounds=bounds, constraints=constraints)
 
         return result
+    
+    def optimize_portfolio_by_Var():
+        pass

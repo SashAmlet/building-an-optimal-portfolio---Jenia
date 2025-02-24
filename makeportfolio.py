@@ -117,7 +117,7 @@ class PortfolioOptimizer:
         return {'x': result.x,
                 'fun': result.fun}
     
-    def optimize_portfolio_by_VaR_1(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True, T=2):
+    def optimize_portfolio_by_VaR_1(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True, T=50):
         # Логарифмізація
         if log:
             log_historical_returns, target_return, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
@@ -133,12 +133,13 @@ class PortfolioOptimizer:
 
         cov_matrix_inv = np.linalg.solve(cov_matrix, np.eye(cov_matrix.shape[0]))
         ones = np.ones_like(mean_returns)
+        divider = ones.T @ cov_matrix_inv @ ones
 
         # Перший доданок
-        first_term = (cov_matrix_inv @ ones) / (ones.T @ cov_matrix_inv @ ones)
+        first_term = (cov_matrix_inv @ ones) / divider
 
         # Другий доданок
-        R = cov_matrix_inv - (np.outer(cov_matrix_inv @ ones, ones) @ cov_matrix_inv) / (ones.T @ cov_matrix_inv @ ones)
+        R = cov_matrix_inv - (np.outer(cov_matrix_inv @ ones, ones) @ cov_matrix_inv) / divider
         second_term =(R @ mean_returns) / (2*T)
 
         result = first_term + second_term
@@ -148,5 +149,35 @@ class PortfolioOptimizer:
                 'fun': 0}
         
     
-    def optimize_portfolio_by_VaR_2():
-        pass
+    def optimize_portfolio_by_VaR_2(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True):
+        # Логарифмізація
+        if log:
+            log_historical_returns, target_return, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
+            cov_matrix = np.cov(log_historical_returns, rowvar=False)
+        else:
+            mean_returns = _mean_returns or self.mean_returns
+            cov_matrix = _cov_matrix or np.cov(self.historical_returns, rowvar=False)
+            target_return = _target_return or self.target_return
+
+        cov_matrix_inv = np.linalg.solve(cov_matrix, np.eye(cov_matrix.shape[0]))
+        ones = np.ones_like(mean_returns)
+        divider = ones.T @ cov_matrix_inv @ ones
+
+        # Перший доданок
+        first_term = (cov_matrix_inv @ ones) / divider
+
+        # Другий доданок
+        R = cov_matrix_inv - (np.outer(cov_matrix_inv @ ones, ones) @ cov_matrix_inv) / divider
+        z = norm.ppf(1 - self.alpha)
+        coefficient = np.sqrt(1 / divider) / np.sqrt(z**2 - mean_returns.T @ R @ mean_returns)
+        second_term = coefficient * R @ mean_returns
+
+        result = first_term + second_term
+
+        a = np.sum(result)
+
+        return {'x': result,
+                'fun': 0}
+
+        
+        

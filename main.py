@@ -18,6 +18,7 @@ MakePortfolio = PortfolioOptimizer(historical_returns, target_return, alpha)
 
 result1 = MakePortfolio.optimize_portfolio_by_Markowitz()
 result2 = MakePortfolio.optimize_portfolio_by_VaR_1()
+result3 = MakePortfolio.optimize_portfolio_by_VaR_2()
 
 var1_zero, var1_mean, var2_zero, var2_mean = MakePortfolio.calculate_VaR(result1)
 
@@ -37,5 +38,8 @@ print("VaR1:")
 print("Оптимальні ваги активів:", result2['x'])
 print("Волатильність:", result2['fun'])
 
+print("VaR2:")
+print("Оптимальні ваги активів:", result3['x'])
+print("Волатильність:", result3['fun'])
 
 # MakePortfolio.plot_efficient_frontier()

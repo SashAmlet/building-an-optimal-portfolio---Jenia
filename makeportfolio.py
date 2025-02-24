@@ -17,7 +17,9 @@ class PortfolioOptimizer:
             sys.exit()
 
 
-    def plot_efficient_frontier(self, num_portfolios=100):
+    def plot_efficient_frontier(self, num_portfolios=100, optimize_func=None):
+        if optimize_func is None:
+            optimize_func = self.optimize_portfolio_by_Markowitz
 
         _, _, log_mean_returns = self.logarithmization()
         target_returns = np.linspace(log_mean_returns.min(), log_mean_returns.max(), num_portfolios)
@@ -53,7 +55,7 @@ class PortfolioOptimizer:
 
         # параметричний (нормальний розподіл)
         historical_returns_array = -self.historical_returns.values
-        RP = (historical_returns_array * result.x).sum(axis=1)
+        RP = (historical_returns_array * result['x']).sum(axis=1)
 
         var1_zero = z_score * RP.std() * np.sqrt(RP.shape[0]+1) - RP.mean() * np.sqrt(RP.shape[0]+1)
         var1_mean = z_score * RP.std() * np.sqrt(RP.shape[0]+1)
@@ -112,7 +114,39 @@ class PortfolioOptimizer:
         result = minimize(portfolio_volatility, initial_weights, args=(cov_matrix),
                         method='SLSQP', bounds=bounds, constraints=constraints)
 
-        return result
+        return {'x': result.x,
+                'fun': result.fun}
     
-    def optimize_portfolio_by_VaR():
+    def optimize_portfolio_by_VaR_1(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True, T=2):
+        # Логарифмізація
+        if log:
+            log_historical_returns, target_return, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
+            cov_matrix = np.cov(log_historical_returns, rowvar=False)
+        else:
+            mean_returns = _mean_returns or self.mean_returns
+            cov_matrix = _cov_matrix or np.cov(self.historical_returns, rowvar=False)
+            target_return = _target_return or self.target_return
+
+        # Testing ds
+        # mean_returns = np.array([0.1, 0.08])
+        # cov_matrix = np.array([[0.04, 0.02], [0.02, 0.03]])
+
+        cov_matrix_inv = np.linalg.solve(cov_matrix, np.eye(cov_matrix.shape[0]))
+        ones = np.ones_like(mean_returns)
+
+        # Перший доданок
+        first_term = (cov_matrix_inv @ ones) / (ones.T @ cov_matrix_inv @ ones)
+
+        # Другий доданок
+        R = cov_matrix_inv - (np.outer(cov_matrix_inv @ ones, ones) @ cov_matrix_inv) / (ones.T @ cov_matrix_inv @ ones)
+        second_term =(R @ mean_returns) / (2*T)
+
+        result = first_term + second_term
+
+        a = np.sum(result)
+        return {'x': result,
+                'fun': 0}
+        
+    
+    def optimize_portfolio_by_VaR_2():
         pass

@@ -4,7 +4,7 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 # Data
-tickers = ['AMZN', 'TSLA', 'AAPL']# ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'SQQQ'] #, 'META', 'JPM', 'JNJ', 'V', 'PG', 'DIS']
+tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'SQQQ'] #, 'META', 'JPM', 'JNJ', 'V', 'PG', 'DIS']
 start_date = '2023-11-30'
 end_date = '2024-11-30'
 
@@ -16,9 +16,10 @@ historical_returns = DataLoader.get_historical_returns(tickers, start_date, end_
 
 MakePortfolio = PortfolioOptimizer(historical_returns, target_return, alpha)
 
-result = MakePortfolio.optimize_portfolio_by_Markowitz()
+result1 = MakePortfolio.optimize_portfolio_by_Markowitz()
+result2 = MakePortfolio.optimize_portfolio_by_VaR_1()
 
-var1_zero, var1_mean, var2_zero, var2_mean = MakePortfolio.calculate_VaR(result)
+var1_zero, var1_mean, var2_zero, var2_mean = MakePortfolio.calculate_VaR(result1)
 
 
 
@@ -28,7 +29,13 @@ print("VaR-mean історичний:", var1_mean)
 print("VaR-zero параметричний:", var2_zero)
 print("VaR-mean параметричний:", var2_mean)
 
-print("Оптимальні ваги активів:", result.x)
-print("Волатильність:", result.fun)
+print("Markowitz:")
+print("Оптимальні ваги активів:", result1['x'])
+print("Волатильність:", result1['fun'])
 
-MakePortfolio.plot_efficient_frontier()
+print("VaR1:")
+print("Оптимальні ваги активів:", result2['x'])
+print("Волатильність:", result2['fun'])
+
+
+# MakePortfolio.plot_efficient_frontier()

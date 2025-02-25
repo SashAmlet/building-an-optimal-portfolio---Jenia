@@ -19,16 +19,16 @@ class PortfolioOptimizer:
 
     def plot_efficient_frontier(self, num_portfolios=100, optimize_func=None):
         if optimize_func is None:
-            optimize_func = self.optimize_portfolio_by_Markowitz
+            optimize_func = self.optimize_portfolio_by_Markowitz_1
 
         _, _, log_mean_returns = self.logarithmization()
         target_returns = np.linspace(log_mean_returns.min(), log_mean_returns.max(), num_portfolios)
         efficient_portfolios = []
 
         for target_return in target_returns:
-            result = self.optimize_portfolio_by_Markowitz(_target_return=target_return)
-            if result.success:
-                efficient_portfolios.append((result.fun, target_return))
+            result = optimize_func(_target_return=target_return)
+            if result is not None:
+                efficient_portfolios.append((result['fun'], target_return))
 
         risks, returns = zip(*efficient_portfolios)
 
@@ -83,7 +83,7 @@ class PortfolioOptimizer:
 
         return log_returns, log_target_return, log_mean_returns
 
-    def optimize_portfolio_by_Markowitz(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True):
+    def optimize_portfolio_by_Markowitz_1(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True):
         # Логарифмізація
         if log:
             log_historical_returns, target_return, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
@@ -117,7 +117,7 @@ class PortfolioOptimizer:
         return {'x': result.x,
                 'fun': result.fun}
     
-    def optimize_portfolio_by_VaR_1(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True, T=50):
+    def optimize_portfolio_by_Markowitz_3(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True, T=50):
         # Логарифмізація
         if log:
             log_historical_returns, target_return, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
@@ -145,11 +145,12 @@ class PortfolioOptimizer:
         result = first_term + second_term
 
         a = np.sum(result)
+        b = result @ mean_returns
         return {'x': result,
                 'fun': 0}
         
     
-    def optimize_portfolio_by_VaR_2(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True):
+    def optimize_portfolio_by_VaR_min(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True):
         # Логарифмізація
         if log:
             log_historical_returns, target_return, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
@@ -175,6 +176,7 @@ class PortfolioOptimizer:
         result = first_term + second_term
 
         a = np.sum(result)
+        b = result @ mean_returns
 
         return {'x': result,
                 'fun': 0}

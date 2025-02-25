@@ -16,9 +16,9 @@ historical_returns = DataLoader.get_historical_returns(tickers, start_date, end_
 
 MakePortfolio = PortfolioOptimizer(historical_returns, target_return, alpha)
 
-result1 = MakePortfolio.optimize_portfolio_by_Markowitz()
-result2 = MakePortfolio.optimize_portfolio_by_VaR_1()
-result3 = MakePortfolio.optimize_portfolio_by_VaR_2()
+result1 = MakePortfolio.optimize_portfolio_by_Markowitz_1()
+result2 = MakePortfolio.optimize_portfolio_by_Markowitz_3()
+result3 = MakePortfolio.optimize_portfolio_by_VaR_min()
 
 var1_zero, var1_mean, var2_zero, var2_mean = MakePortfolio.calculate_VaR(result1)
 
@@ -30,16 +30,20 @@ print("VaR-mean історичний:", var1_mean)
 print("VaR-zero параметричний:", var2_zero)
 print("VaR-mean параметричний:", var2_mean)
 
-print("Markowitz:")
-print("Оптимальні ваги активів:", result1['x'])
+
+print("Markowitz-1:")
+formatted_weights = ', '.join(['{:.3f}'.format(x) for x in result1['x']])
+print('Оптимальні ваги активів: [{}]'.format(formatted_weights))
 print("Волатильність:", result1['fun'])
 
-print("VaR1:")
-print("Оптимальні ваги активів:", result2['x'])
+print("Markowitz-3:")
+formatted_weights = ', '.join(['{:.3f}'.format(x) for x in result2['x']])
+print('Оптимальні ваги активів: [{}]'.format(formatted_weights))
 print("Волатильність:", result2['fun'])
 
-print("VaR2:")
-print("Оптимальні ваги активів:", result3['x'])
+print("VaR-min:")
+formatted_weights = ', '.join(['{:.3f}'.format(x) for x in result3['x']])
+print('Оптимальні ваги активів: [{}]'.format(formatted_weights))
 print("Волатильність:", result3['fun'])
 
-# MakePortfolio.plot_efficient_frontier()
+MakePortfolio.plot_efficient_frontier()

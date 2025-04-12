@@ -48,25 +48,45 @@ class PortfolioOptimizer:
         print("Normality with locking:", "Passed" if p_with_lock > 0.05 else "Failed")
         return p_with_lock > 0.05
 
+    def calculate_volatility(self, result):
+        """
+        Calculate the volatility (standard deviation) of a portfolio's returns.
+        This method computes the portfolio's volatility based on historical returns
+        and the weights of the assets in the portfolio.
+        Args:
+            result (numpy.ndarray): A 1D array representing the weights of each asset 
+                                    in the portfolio. The weights should sum to 1.
+        Returns:
+            float: The standard deviation of the portfolio's returns, representing 
+                   its volatility.
+        """
+        # вычисляем фактическое изменение в цене каждой акции в портфеле (в процентах), после чего умножаем на минус (чем больше число - тем больеше падение)
+        historical_returns_array = self.historical_returns.values
+        # вычисляем фактическое изменение в цене портфеля (в единицах - деньги), то бишь умножаем изменение акций на их вес в портфеле и суммируем по всем акциям
+        RP = (historical_returns_array * result).sum(axis=1) 
+
+        # вычисляем стандартное отклонение (волатильность) портфеля
+        return RP.std()
+
     def calculate_VaR(self, result):
         z_score = norm.ppf(1 - self.alpha)
 
-        # if self.normal_distribution():
-
-        # параметричний (нормальний розподіл)
+        # вычисляем фактическое изменение в цене каждой акции в портфеле (в процентах), после чего умножаем на минус (чем больше число - тем больеше падение)
         historical_returns_array = -self.historical_returns.values
-        RP = (historical_returns_array * result['x']).sum(axis=1)
+        # вычисляем фактическое изменение в цене портфеля (в единицах - деньги), то бишь умножаем изменение акций на их вес в портфеле и суммируем по всем акциям
+        RP = (historical_returns_array * result['x']).sum(axis=1) 
 
-        var1_zero = z_score * RP.std() * np.sqrt(RP.shape[0]+1) - RP.mean() * np.sqrt(RP.shape[0]+1)
-        var1_mean = z_score * RP.std() * np.sqrt(RP.shape[0]+1)
-        #else:
+        if self.normal_distribution():
+            # Parametric method (normal distribution)
+            var = z_score * result['fun'] * np.sqrt(RP.shape[0] + 1)
+            method = "Parametric method (normal distribution)"
+        else:
+            # Historical method (distribution-independent)
+            RP_d = np.sort(RP)[::-1]
+            var = np.quantile(RP_d, (1 - self.alpha))
+            method = "Historical method (distribution-independent)"
 
-        # історичний (не залежить від розподілу)
-
-        var2_zero = 1 - np.quantile((1 + RP).cumprod(), self.alpha)
-        var2_mean = np.mean((1 + RP).cumprod()) - np.quantile((1 + RP).cumprod(), self.alpha)
-
-        return var1_zero, var1_mean, var2_zero, var2_mean
+        return var, method
 
     
     def logarithmization(self, _mean_returns=None, _cov_matrix=None, _target_return=None):
@@ -92,6 +112,13 @@ class PortfolioOptimizer:
             mean_returns = _mean_returns or self.mean_returns
             cov_matrix = _cov_matrix or np.cov(self.historical_returns, rowvar=False)
             target_return = _target_return or self.target_return
+
+        
+        # Testing ds
+        # mean_returns = np.array([0.15, 0.1, 0.12])
+        # cov_matrix = np.array([[0.05, 0.01, 0.02], [0.01, 0.04, 0.015], [0.02, 0.015, 0.03]])
+        # target_return = 0.11
+        # T=5
 
 
         # Цільова функція (мінімізація ризику)
@@ -120,16 +147,17 @@ class PortfolioOptimizer:
     def optimize_portfolio_by_Markowitz_3(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True, T=50):
         # Логарифмізація
         if log:
-            log_historical_returns, target_return, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
+            log_historical_returns, _, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
             cov_matrix = np.cov(log_historical_returns, rowvar=False)
         else:
             mean_returns = _mean_returns or self.mean_returns
             cov_matrix = _cov_matrix or np.cov(self.historical_returns, rowvar=False)
-            target_return = _target_return or self.target_return
 
         # Testing ds
-        # mean_returns = np.array([0.1, 0.08])
-        # cov_matrix = np.array([[0.04, 0.02], [0.02, 0.03]])
+        # mean_returns = np.array([0.15, 0.1, 0.12])
+        # cov_matrix = np.array([[0.05, 0.01, 0.02], [0.01, 0.04, 0.015], [0.02, 0.015, 0.03]])
+        # target_return = 0.11
+        # T=5
 
         cov_matrix_inv = np.linalg.solve(cov_matrix, np.eye(cov_matrix.shape[0]))
         ones = np.ones_like(mean_returns)
@@ -143,22 +171,24 @@ class PortfolioOptimizer:
         second_term =(R @ mean_returns) / (2*T)
 
         result = first_term + second_term
-
-        a = np.sum(result)
-        b = result @ mean_returns
         return {'x': result,
-                'fun': 0}
+                'fun': self.calculate_volatility(result)}
         
-    
     def optimize_portfolio_by_VaR_min(self, _mean_returns=None, _cov_matrix=None, _target_return=None, log=True):
         # Логарифмізація
         if log:
-            log_historical_returns, target_return, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
+            log_historical_returns, _, mean_returns = self.logarithmization(_mean_returns, _cov_matrix, _target_return)
             cov_matrix = np.cov(log_historical_returns, rowvar=False)
         else:
             mean_returns = _mean_returns or self.mean_returns
             cov_matrix = _cov_matrix or np.cov(self.historical_returns, rowvar=False)
-            target_return = _target_return or self.target_return
+
+        
+        # Testing ds
+        # mean_returns = np.array([0.15, 0.1, 0.12])
+        # cov_matrix = np.array([[0.05, 0.01, 0.02], [0.01, 0.04, 0.015], [0.02, 0.015, 0.03]])
+        # target_return = 0.11
+        # T=5
 
         cov_matrix_inv = np.linalg.solve(cov_matrix, np.eye(cov_matrix.shape[0]))
         ones = np.ones_like(mean_returns)
@@ -175,11 +205,6 @@ class PortfolioOptimizer:
 
         result = first_term + second_term
 
-        a = np.sum(result)
-        b = result @ mean_returns
 
         return {'x': result,
-                'fun': 0}
-
-        
-        
+                'fun': self.calculate_volatility(result)}

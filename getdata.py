@@ -20,6 +20,21 @@ class DataLoader:
         return returns
 
     @staticmethod
+    def get_historical_costs(tickers, start_date, end_date):
+        # Завантаження даних про ціни акцій
+        data = yf.download(tickers, start=start_date, end=end_date)['Close']
+
+        # Перевірка, чи дані завантажилися коректно
+        if data.empty:
+            print("Дані не завантажилися. Перевірте тикери та дати.")
+            return np.array([])
+
+        # Обчислення щоденних дохідностей (у відсотках) на основі зміни ціни на акції
+        clean_data = data.dropna()
+
+        return clean_data
+    
+    @staticmethod
     def export_to_excel(historical_returns, tickers, filename='historical_returns.xlsx'):
         # Перетворення масиву в DataFrame
         df = pd.DataFrame(historical_returns, columns=tickers)
